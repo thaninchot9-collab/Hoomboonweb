@@ -1,0 +1,69 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>รับออเดอร์ — โฮมบุญ</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--g:#c8921a;--o:#e0701a;--d:#4a2a0c}*{box-sizing:border-box}body{margin:0;font:16px/1.5 Sarabun,sans-serif;background:#fff7e6;color:var(--d)}
+header{position:sticky;top:0;background:var(--d);color:#fde9b8;padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:5}header b{flex:1}
+main{max-width:900px;margin:auto;padding:12px}input,select{width:100%;padding:9px;border:1px solid #e3c98a;border-radius:8px;margin:3px 0;font:inherit}
+.btn{background:linear-gradient(135deg,var(--g),var(--o));color:#fff;border:0;border-radius:9px;padding:8px 14px;font:inherit;cursor:pointer;text-decoration:none;display:inline-block}.btn.g{background:#fff;color:var(--d);border:1px solid var(--g)}.btn.r{background:#b3261e}
+.box{background:#fff;border-radius:12px;padding:14px;margin:10px 0;box-shadow:0 2px 8px #c8921a30}.box.new{border-left:6px solid var(--o)}.row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.chips{display:flex;gap:6px;overflow:auto;padding:4px 0}.chip{border:1px solid var(--g);background:#fff;border-radius:18px;padding:4px 12px;white-space:nowrap;font:inherit}.chip.on{background:var(--g);color:#fff}
+.av{width:34px;height:34px;border-radius:50%;object-fit:cover;background:#f6c25b;display:inline-block;vertical-align:middle;text-align:center;line-height:34px}.av.big{width:96px;height:96px}.claim{background:#e8f5e9;border-radius:8px;padding:6px 8px;margin:6px 0}.modal{position:fixed;inset:0;background:#0006;display:none;place-items:center;z-index:20}.modal.on{display:grid}.mb{background:#fff;border-radius:14px;padding:16px;width:min(92vw,360px);text-align:center}
+#alert{background:var(--o);color:#fff;padding:10px;text-align:center;display:none;cursor:pointer}#toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:var(--d);color:#fff;padding:8px 16px;border-radius:9px;display:none}
+</style></head><body>
+<div id="login" style="max-width:360px;margin:12vh auto;padding:14px"><div class="box"><h2>เข้าสู่ระบบพนักงาน</h2><form id="lf"><input name="e" type="email" placeholder="อีเมล" required><input name="p" type="password" placeholder="รหัสผ่าน" required><button class="btn">เข้าสู่ระบบ</button></form><p id="le"></p><a href="index.html">← กลับหน้าร้าน</a></div></div>
+<div id="app" hidden><header><img class="av" id="hav" hidden alt=""><b id="hnm">📦 รับออเดอร์</b><button class="btn g" id="pf">👤 โปรไฟล์</button><button class="btn g" id="snd">🔕 เปิดเสียงเตือน</button><button class="btn g" id="rf">รีเฟรช</button><button class="btn g" id="out">ออก</button></header>
+<div id="alert"></div><main><input id="q" placeholder="ค้นหาหมายเลขคำสั่งซื้อ/ชื่อ/เบอร์"><div class="chips" id="ch"></div><div id="ol"></div></main></div><div class="modal" id="pm"><div class="mb"><h3>โปรไฟล์พนักงาน</h3><img class="av big" id="pav" src="logo.jpg" alt="" onerror="this.removeAttribute('src')"><br><label class="btn g" style="margin:8px 0">🖼 เลือกรูปจากอัลบั้ม<input type="file" id="pfile" accept="image/*" hidden></label><input id="pname" placeholder="ชื่อที่ใช้แสดง (เช่น พี่นก)" maxlength="40"><div class="row" style="margin-top:8px"><button class="btn" id="psv">บันทึก</button><button class="btn g" id="pcl">ปิด</button></div></div></div><div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="supabase-config.js"></script>
+<script>
+const $=s=>document.querySelector(s),C=window.HB_CONFIG||{};
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>"฿"+Number(n||0).toLocaleString("th-TH");const toast=t=>{const e=$("#toast");e.textContent=t;e.style.display="block";setTimeout(()=>e.style.display="none",3000)};
+const ST=["รอชำระเงิน","รอตรวจสอบการชำระเงิน","ชำระเงินแล้ว","กำลังเตรียมสินค้า","จัดส่งแล้ว","สำเร็จ","ยกเลิก"];
+if(!C.SUPABASE_URL)$("#le").textContent="ยังไม่ได้ตั้งค่า supabase-config.js";
+const sb=C.SUPABASE_URL?supabase.createClient(C.SUPABASE_URL,C.SUPABASE_ANON_KEY):null;let P={},blob=null,me,O=[],f="all",seen=null,sound=false,timer;
+$("#lf").onsubmit=async e=>{e.preventDefault();if(!sb)return;const d=Object.fromEntries(new FormData(e.target));const {error}=await sb.auth.signInWithPassword({email:d.e,password:d.p});if(error)return $("#le").textContent=error.message;boot()};
+async function boot(){if(!sb)return;const u=(await sb.auth.getSession()).data.session?.user;if(!u)return;const {data}=await sb.from("profiles").select("role,full_name,avatar_url").eq("id",u.id).single();
+ if(!["admin","staff"].includes(data?.role)){await sb.auth.signOut();$("#le").textContent="บัญชีนี้ไม่มีสิทธิ์พนักงาน";return}
+ P=data;me=u;$("#login").hidden=true;$("#app").hidden=false;hdr();await load();timer=setInterval(load,30000);if(!P.full_name)showP();
+ sb.channel("hb-orders").on("postgres_changes",{event:"*",schema:"public",table:"orders"},()=>load()).on("postgres_changes",{event:"INSERT",schema:"public",table:"payments"},()=>load()).subscribe()}
+const av=u=>u?`<img class="av" src="${esc(u)}" alt="">`:`<span class="av">👤</span>`;
+function hdr(){$("#hav").src=P.avatar_url||"";$("#hav").hidden=!P.avatar_url;$("#hnm").textContent="📦 "+(P.full_name||"รับออเดอร์")}
+function showP(){$("#pname").value=P.full_name||"";$("#pav").src=P.avatar_url||"logo.jpg";$("#pm").classList.add("on")}
+$("#pf").onclick=showP;$("#pcl").onclick=()=>$("#pm").classList.remove("on");
+$("#pfile").onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new Image(),u=URL.createObjectURL(f);img.onload=()=>{const c=document.createElement("canvas"),m=Math.min(img.width,img.height);c.width=c.height=256;c.getContext("2d").drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,256,256);URL.revokeObjectURL(u);c.toBlob(b=>{blob=b;$("#pav").src=URL.createObjectURL(b)},"image/jpeg",.85)};img.src=u};
+$("#psv").onclick=async()=>{const n=$("#pname").value.trim();if(!n)return toast("กรุณาใส่ชื่อ");let url=P.avatar_url||null;
+ if(blob){const p=`${me.id}/avatar.jpg`,r=await sb.storage.from("avatars").upload(p,blob,{upsert:true,contentType:"image/jpeg"});if(r.error)return toast(r.error.message);url=sb.storage.from("avatars").getPublicUrl(p).data.publicUrl+"?v="+Date.now()}
+ const r=await sb.from("profiles").update({full_name:n,avatar_url:url}).eq("id",me.id);if(r.error)return toast(r.error.message);P.full_name=n;P.avatar_url=url;blob=null;$("#pm").classList.remove("on");hdr();toast("บันทึกโปรไฟล์แล้ว")};
+function ping(t){if(sound)beep();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}toast(t);if("Notification"in window&&Notification.permission=="granted"&&document.hidden)try{new Notification("โฮมบุญ",{body:t})}catch(e){}}
+function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.value=.2;o.start();o.stop(a.currentTime+.4)}catch(e){}}
+$("#snd").onclick=()=>{sound=!sound;$("#snd").textContent=sound?"🔔 เสียงเตือนเปิดอยู่":"🔕 เปิดเสียงเตือน";if(sound){beep();if("Notification"in window&&Notification.permission=="default")Notification.requestPermission()}};
+$("#rf").onclick=load;$("#out").onclick=async()=>{await sb.auth.signOut();location.reload()};$("#q").oninput=draw;
+async function load(){const {data,error}=await sb.from("orders").select("*,order_items(name,qty,price),payments(*)").order("created_at",{ascending:false}).limit(200);if(error)return toast(error.message);O=data;
+ const ids=new Set(O.map(o=>o.id)),pend=O.reduce((a,o)=>a+o.payments.filter(p=>p.status=="รอตรวจสอบ").length,0),cl=new Map(O.map(o=>[o.id,o.claimed_by]));
+ if(seen!==null){const nw=O.filter(o=>!seen.has(o.id)).length,slips=pend>(window.lastPend||0);
+  if(nw||slips){const t=(nw?`🛎 ออเดอร์ใหม่ ${nw} รายการ `:"")+(slips?"📎 มีสลิปรอตรวจสอบ":"");$("#alert").style.display="block";$("#alert").textContent=t+" (แตะเพื่อปิด)";ping(t)}
+  O.forEach(o=>{if(o.claimed_by&&seen.has(o.id)&&!window.cl.get(o.id)&&o.claimed_by!==me.id)ping(`✅ ${o.claimed_by_name} รับออเดอร์ ${o.order_no} แล้ว`)})}
+ seen=ids;window.cl=cl;window.lastPend=pend;document.title=(pend?`(${pend}) `:"")+"รับออเดอร์ — โฮมบุญ";
+ const a=document.activeElement;if(!($("#ol").contains(a)&&/INPUT|SELECT/.test(a.tagName)))draw()}
+$("#alert").onclick=()=>$("#alert").style.display="none";
+function draw(){const q=$("#q").value.toLowerCase();const LB={all:"ทั้งหมด",unclaimed:"🆕 ยังไม่มีคนรับ",mine:"🙋 ของฉัน"},fl=(o,s)=>s=="all"||(s=="unclaimed"?!o.claimed_by&&o.status!="ยกเลิก":s=="mine"?o.claimed_by==me.id:o.status==s);
+ $("#ch").innerHTML=["all","unclaimed","mine",...ST].map(s=>`<button class="chip ${f==s?"on":""}" data-s="${s}">${LB[s]||s} (${O.filter(o=>fl(o,s)).length})</button>`).join("");
+ $("#ol").innerHTML=O.filter(o=>fl(o,f)&&(!q||(o.order_no+o.customer.name+o.customer.phone).toLowerCase().includes(q))).map(o=>{const c=o.customer,wait=o.payments.some(p=>p.status=="รอตรวจสอบ");
+ return`<div class="box ${wait||o.status=="รอตรวจสอบการชำระเงิน"?"new":""}"><div class="row"><b>${esc(o.order_no)}</b><select data-st="${o.id}">${ST.map(s=>`<option ${s==o.status?"selected":""}>${s}</option>`).join("")}</select></div>
+ ${o.claimed_by?`<div class="claim row"><span>${av(o.claimed_by_avatar)} <b>${esc(o.claimed_by_name)}</b> รับออเดอร์แล้ว <small>${new Date(o.claimed_at).toLocaleString("th-TH")}</small></span>${o.claimed_by==me.id||P.role=="admin"?`<button class="btn g" data-rel="${o.id}">ปล่อยคืน</button>`:""}</div>`:o.status=="ยกเลิก"?"":`<div class="claim row" style="background:#fff3cd"><span>⏳ ยังไม่มีคนรับออเดอร์นี้</span><button class="btn" data-cl="${o.id}">✋ รับออเดอร์</button></div>`}
+ <div>👤 ${esc(c.name)} <a href="tel:${esc(c.phone)}">${esc(c.phone)}</a> LINE: ${esc(c.line||"-")}</div><small>${esc(c.addr)} ${esc(c.sub)} ${esc(c.dist)} ${esc(c.prov)} ${esc(c.zip)}<br>หมายเหตุลูกค้า: ${esc(c.note||"-")} • ${new Date(o.created_at).toLocaleString("th-TH")}</small>
+ <div>${o.order_items.map(i=>`${esc(i.name)} ×${i.qty}`).join("<br>")}</div><div><button class="chip" data-lg="${o.id}">📜 ประวัติ</button></div><div><b>รวม ${fmt(o.total)}</b> • มัดจำ ${fmt(o.deposit)} • คงเหลือ ${fmt(o.balance)} • ${o.method=="cod"?"เก็บเงินปลายทาง":"โอน"}</div>
+ <div class="row"><input data-tr="${o.id}" value="${esc(o.tracking||"")}" placeholder="เลขพัสดุ" style="flex:1"><input data-nt="${o.id}" value="${esc(o.note||"")}" placeholder="หมายเหตุร้าน" style="flex:1"><button class="btn g" data-sv="${o.id}">บันทึก</button></div>
+ ${o.payments.map(p=>`<div class="row"><button class="btn g" data-slip="${esc(p.slip_url)}">ดูสลิป</button><span>${esc(p.status)} ${esc(p.admin_note||"")}</span>${p.status=="รอตรวจสอบ"?`<span><button class="btn" data-ok="${p.id}|${o.id}">ยืนยันยอด</button> <button class="btn r" data-no="${p.id}">ปฏิเสธ</button></span>`:""}</div>`).join("")}</div>`}).join("")||"<p>ยังไม่มีคำสั่งซื้อ</p>"}
+$("#ch").onclick=e=>{if(e.target.dataset.s){f=e.target.dataset.s;draw()}};
+$("#ol").onchange=async e=>{const id=e.target.dataset.st;if(!id)return;const r=await sb.from("orders").update({status:e.target.value}).eq("id",id);toast(r.error?r.error.message:"เปลี่ยนสถานะแล้ว");load()};
+$("#ol").onclick=async e=>{const d=e.target.dataset;
+ if(d.cl){const r=await sb.rpc("claim_order",{p_order:d.cl});if(r.error){toast(r.error.message);if(/โปรไฟล์/.test(r.error.message))showP()}else toast("✅ คุณรับออเดอร์แล้ว");load()}
+ if(d.rel){if(!confirm("ปล่อยออเดอร์คืน?"))return;const r=await sb.rpc("release_order",{p_order:d.rel});toast(r.error?r.error.message:"ปล่อยออเดอร์แล้ว");load()}
+ if(d.lg){const {data:L}=await sb.from("order_logs").select("*").eq("order_id",d.lg).order("created_at");alert((L||[]).map(l=>`${new Date(l.created_at).toLocaleString("th-TH")} • ${l.actor_name}: ${l.action}`).join("\n")||"ยังไม่มีประวัติ")}
+ if(d.sv){const r=await sb.from("orders").update({tracking:document.querySelector(`[data-tr="${d.sv}"]`).value,note:document.querySelector(`[data-nt="${d.sv}"]`).value}).eq("id",d.sv);toast(r.error?r.error.message:"บันทึกแล้ว")}
+ if(d.slip){const {data:u}=await sb.storage.from("slips").createSignedUrl(d.slip,300);if(u)window.open(u.signedUrl,"_blank");else toast("เปิดสลิปไม่ได้")}
+ if(d.ok){const [pid,oid]=d.ok.split("|"),n=prompt("หมายเหตุ (ถ้ามี)")||"";const a=await sb.from("payments").update({status:"ยืนยันแล้ว",admin_note:n,reviewed_by:me.id,reviewed_at:new Date()}).eq("id",pid);const b=await sb.from("orders").update({status:"ชำระเงินแล้ว"}).eq("id",oid);toast(a.error||b.error?(a.error||b.error).message:"ยืนยันแล้ว");load()}
+ if(d.no){const n=prompt("เหตุผลที่ปฏิเสธ")||"";const a=await sb.from("payments").update({status:"ปฏิเสธ",admin_note:n,reviewed_by:me.id,reviewed_at:new Date()}).eq("id",d.no);toast(a.error?a.error.message:"ปฏิเสธสลิปแล้ว");load()}};
+boot();
+</script></body></html>

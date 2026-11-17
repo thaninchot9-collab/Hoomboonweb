@@ -1,5 +1,6 @@
 <!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>โฮมบุญสังฆภัณฑ์</title><link rel="icon" href="logo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{--g:#c8921a;--o:#e0701a;--d:#4a2a0c;--c:#fff7e6;--w:#fff}
@@ -41,7 +42,7 @@ footer{background:var(--d);color:#fde9b8;text-align:center;padding:22px}.row{dis
 <section><div class="hero"><img src="logo.jpg" alt="" onerror="this.style.display='none'"><div><h1 id="hn">โฮมบุญสังฆภัณฑ์</h1><p>สินค้าครบครัน บริการท่านด้วยหัวใจ — ชุดสังฆทาน เครื่องบวช ผ้าไตร ธูปเทียน และเครื่องใช้งานบุญทุกชนิด</p><a class="btn" style="text-decoration:none;display:inline-block" href="#shop">เลือกซื้อสินค้า</a></div></div></section>
 <section id="rec"><h2>สินค้าแนะนำ</h2><div class="grid" id="gRec"></div></section>
 <section id="best"><h2>สินค้าขายดี</h2><div class="grid" id="gBest"></div></section>
-<section id="shop"><h2>สินค้าทั้งหมด</h2><div class="chips" id="cats"></div><p><select id="sort" style="width:auto"><option value="">เรียงตามล่าสุด</option><option value="a">ราคาน้อยไปมาก</option><option value="d">ราคามากไปน้อย</option></select></p><div class="grid" id="gAll"></div></section>
+<section id="shop"><h2>สินค้าทั้งหมด</h2><div class="chips" id="cats"></div><p><select id="sort" style="width:auto"><option value="">เรียงตามล่าสุด</option><option value="a">ราคาน้อยไปมาก</option><option value="d">ราคามากไปน้อย</option></select></p><div class="grid" id="gAll"></div><p style="text-align:center"><button class="btn ghost" id="more" hidden>โหลดสินค้าเพิ่ม</button></p></section>
 <section id="about"><h2>เกี่ยวกับร้าน</h2><div class="ab"><img id="abImg" src="shop.jpg" loading="lazy" alt="หน้าร้านโฮมบุญสังฆภัณฑ์"><div><p id="ab">โฮมบุญ สังฆภัณฑ์ เป็นร้านจำหน่ายเครื่องสังฆภัณฑ์และอุปกรณ์พิธีกรรมทางศาสนาในอำเภอเดชอุดม จังหวัดอุบลราชธานี ตั้งอยู่บริเวณถนนเดชอุดม–นาห่อม โดยเป็นแหล่งจัดหาเครื่องไทยธรรม เทียนพรรษา และอุปกรณ์ประกอบพิธีต่าง ๆ ทั้งสำหรับประชาชนทั่วไปและหน่วยงานในพื้นที่
 
 บรรยากาศและบริการ: ได้รับความพึงพอใจจากผู้ใช้บริการค่อนข้างสูงในด้านความครบครันของสินค้าสังฆภัณฑ์และความสะดวกในการเดินทางมาเลือกซื้อ</p><p><b>เวลาทำการ:</b> <span id="abHours">เปิดให้บริการทุกวัน 06:00 – 18:00 น.</span><br><b>โทรสอบถาม:</b> <a id="abTel" href="tel:0850158084">085 015 8084</a></p></div></div></section>
@@ -52,7 +53,7 @@ footer{background:var(--d);color:#fde9b8;text-align:center;padding:22px}.row{dis
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="supabase-config.js"></script>
 <script>
 const $=s=>document.querySelector(s),C=window.HB_CONFIG||{},LIVE=!!(C.SUPABASE_URL&&C.SUPABASE_ANON_KEY);
-const sb=LIVE?supabase.createClient(C.SUPABASE_URL,C.SUPABASE_ANON_KEY):null;
+const sb=LIVE&&window.supabase?supabase.createClient(C.SUPABASE_URL,C.SUPABASE_ANON_KEY):null;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt=n=>"฿"+Number(n).toLocaleString("th-TH");
 const sfx=(()=>{let ctx,on=true,last=0,wi=null;try{on=localStorage.hbsnd!=="0"}catch(e){}
@@ -70,6 +71,7 @@ function bump(){const b=$("#bCart");b.classList.remove("bump");void b.offsetWidt
 function confetti(){if(matchMedia("(prefers-reduced-motion:reduce)").matches)return;const cols=["#c8921a","#e0701a","#2e9e4f","#e84a5f","#4a90e2"],w=document.createElement("div");for(let i=0;i<40;i++){const d=document.createElement("i");d.className="cf";d.style.cssText=`left:${Math.random()*100}vw;background:${cols[i%5]};--x:${(Math.random()-.5)*160}px;animation-delay:${Math.random()*.4}s;animation-duration:${1.4+Math.random()}s`;w.appendChild(d)}document.body.appendChild(w);setTimeout(()=>w.remove(),2800)}
 function fixCart(){if(!LIVE||!P.length)return;cart=cart.map(i=>{const p=P.find(x=>x.id==i.id);return p&&p.stock>0?{id:i.id,qty:Math.min(i.qty,p.stock)}:null}).filter(Boolean);try{localStorage.hbcart=JSON.stringify(cart)}catch(e){}}
 document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("button,a.btn,.chip,.card img,nav a"))sfx.clickIf()});
+const PG=24;let shown=PG,qt;
 let P=[],CAT=[],S={shipping_fee:50,deposit_enabled:true,deposit_percent:30,deposit_mode:"percent",deposit_min:0,cod_enabled:false},cart=(()=>{try{const a=JSON.parse(localStorage.hbcart||"[]");return Array.isArray(a)?a.filter(x=>x&&x.id&&x.qty>0):[]}catch(e){return[]}})(),cat="",user=null;
 let tt;function toast(t,bad){const e=$("#toast");e.textContent=t;e.style.display="block";e.style.background=bad?"#b3261e":"";e.classList.remove("pop");void e.offsetWidth;e.classList.add("pop");if(bad)sfx.play("error");clearTimeout(tt);tt=setTimeout(()=>e.style.display="none",3000)}
 function ph(name,i){const h=(i*47)%360,t=encodeURIComponent(name.slice(0,14));return`data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><rect width='400' height='400' fill='hsl(${30+h%30},80%,${88-i%3*4}%)'/><circle cx='200' cy='170' r='80' fill='hsl(${30+h%30},75%,55%)'/><text x='200' y='330' font-size='26' text-anchor='middle' fill='%234a2a0c'>${t}</text></svg>`}
@@ -84,17 +86,17 @@ async function load(){if(!LIVE){demoData();$("#demo").hidden=false;return}
  [1,2].forEach(n=>{if(S["map"+n+"_name"])$("#m"+n+"n").textContent=S["map"+n+"_name"];if(ok(S["map"+n+"_url"]))$("#m"+n+"u").href=S["map"+n+"_url"]});
  const u=(await sb.auth.getSession()).data.session?.user;setUser(u)}
 function setUser(u){user=u;$("#bAdm").hidden=true;if(u&&sb)sb.from("profiles").select("role").eq("id",u.id).single().then(r=>{$("#bAdm").hidden=!["admin","staff"].includes(r.data?.role);$("#bAdm").href=r.data?.role=="staff"?"staff.html":"admin.html"});$("#bAuth").textContent=u?"ออกจากระบบ":"เข้าสู่ระบบ / สมัคร"}
-function card(p){const img=esc(p.images[0]||FALL);return`<div class="card"><img loading="lazy" src="${img}" onerror="this.onerror=null;this.src='${FALL.replace(/'/g,"%27")}'" onclick="detail('${p.id}')" alt="${esc(p.name)}"><div><small>${esc(p.sku)}</small><b>${esc(p.name)}</b><span class="price">${fmt(p.price)}</span>${p.stock<=0?'<span class="tag" style="background:#999">หมด</span>':p.stock<=5?`<span class="tag">เหลือ ${p.stock}</span>`:""}<button class="btn" ${p.stock<=0?"disabled":""} onclick="add('${p.id}')">ใส่ตะกร้า</button></div></div>`}
+function card(p){const img=esc(p.images[0]||FALL);return`<div class="card"><img loading="lazy" decoding="async" width="300" height="300" src="${img}" onerror="this.onerror=null;this.src='${FALL.replace(/'/g,"%27")}'" onclick="detail('${p.id}')" alt="${esc(p.name)}"><div><small>${esc(p.sku)}</small><b>${esc(p.name)}</b><span class="price">${fmt(p.price)}</span>${p.stock<=0?'<span class="tag" style="background:#999">หมด</span>':p.stock<=5?`<span class="tag">เหลือ ${p.stock}</span>`:""}<button class="btn" ${p.stock<=0?"disabled":""} onclick="add('${p.id}')">ใส่ตะกร้า</button></div></div>`}
 function render(){const q=$("#q").value.trim().toLowerCase();let l=P.filter(p=>(!cat||p.category_id==cat)&&(!q||p.name.toLowerCase().includes(q)||p.sku.toLowerCase().includes(q)));const s=$("#sort").value;if(s)l=[...l].sort((a,b)=>s=="a"?a.price-b.price:b.price-a.price);
  const g=(id,a,t)=>$(id).innerHTML=a.length?a.map(card).join(""):`<p>${t}</p>`;
- g("#gRec",P.filter(p=>p.featured).slice(0,8),"ยังไม่มีสินค้าแนะนำ");g("#gBest",P.filter(p=>p.bestseller).slice(0,8),"ยังไม่มีสินค้าขายดี");g("#gAll",l,"ไม่พบสินค้าที่ค้นหา");
+ g("#gRec",P.filter(p=>p.featured).slice(0,8),"ยังไม่มีสินค้าแนะนำ");g("#gBest",P.filter(p=>p.bestseller).slice(0,8),"ยังไม่มีสินค้าขายดี");g("#gAll",l.slice(0,shown),"ไม่พบสินค้าที่ค้นหา");$("#more").hidden=l.length<=shown;
  $("#cats").innerHTML=`<button class="chip ${cat?"":"on"}" data-c="">ทั้งหมด</button>`+CAT.map(c=>`<button class="chip ${cat==c.id?"on":""}" data-c="${c.id}">${esc(c.name)}</button>`).join("");
- $("#cn").textContent=cart.reduce((a,b)=>a+b.qty,0)}
-$("#cats").onclick=e=>{if(e.target.dataset.c!==undefined){cat=e.target.dataset.c;render()}};$("#q").oninput=render;$("#sort").onchange=render;
+ cnt()}
+function cnt(){$("#cn").textContent=cart.reduce((a,b)=>a+b.qty,0)}
+$("#cats").onclick=e=>{if(e.target.dataset.c!==undefined){cat=e.target.dataset.c;shown=PG;render()}};$("#q").oninput=()=>{clearTimeout(qt);qt=setTimeout(()=>{shown=PG;render()},200)};$("#sort").onchange=()=>{shown=PG;render()};$("#more").onclick=()=>{shown+=PG;render()};
 function modal(h){$("#mb").innerHTML=h;$("#m").classList.add("on");sfx.play("pop")}function close(){stopWait();$("#m").classList.remove("on")}$("#m").onclick=e=>{if(e.target.id=="m")close()};
 function detail(id){const p=P.find(x=>x.id==id);if(!p)return;modal(`<img id="big" src="${esc(p.images[0]||FALL)}" style="width:100%;border-radius:12px;cursor:zoom-in" onclick="this.style.transform=this.style.transform?'':'scale(2)';this.style.cursor=this.style.transform?'zoom-out':'zoom-in'"><div style="overflow:hidden;display:flex;gap:6px;margin:6px 0">${p.images.map(u=>`<img src="${esc(u)}" width="60" onclick="$('#big').src=this.src">`).join("")}</div><h3>${esc(p.name)}</h3><small>รหัส ${esc(p.sku)} • คงเหลือ ${p.stock}</small><p style="white-space:pre-wrap">${esc(p.description)}</p><p class="price">${fmt(p.price)}</p><button class="btn" onclick="add('${p.id}');close()">ใส่ตะกร้า</button> <button class="btn ghost" onclick="close()">ปิด</button>`)}
 function add(id){const p=P.find(x=>x.id==id);if(!p)return toast("ไม่พบสินค้า",1);const l=cart.find(x=>x.id==id);if((l?l.qty:0)+1>p.stock)return toast("สินค้าในสต็อกไม่พอ",1);l?l.qty++:cart.push({id,qty:1});save();sfx.play("add");bump();toast("เพิ่มลงตะกร้าแล้ว")}
-function save(){try{localStorage.hbcart=JSON.stringify(cart)}catch(e){}render()}
+function save(){try{localStorage.hbcart=JSON.stringify(cart)}catch(e){}cnt()}
 function calc(){let sub=0,dep=0;const L=cart.map(i=>{const p=P.find(x=>x.id==i.id);if(!p)return null;sub+=p.price*i.qty;dep+=p.price*i.qty*(p.deposit_percent??S.deposit_percent)/100;return{p,qty:i.qty}}).filter(Boolean);
- const tot=sub+(L.length?+S.shipping_fee:0);if(!S.deposit_enabled)dep=0;else if(S.deposit_mode=="fixed")dep=Math.min(+S.deposit_fixed||0,tot);else dep=Math.min(Math.max(dep,+S.deposit_min||0),tot);dep=Math.round(dep*100)/100;return{L,sub,ship:L.length?+S.shipping_fee:0,tot,dep,bal:tot-dep}}
-function cartView(){const c=calc();modal(`<h3>ตะกร้าสินค้า</h3>${c.L.length?c.L.map(({p,qty})=>`<div class="row"><span>${esc(p.name)}<br><small>${fmt(p.price)}</small></span><span><button onclick="chg('${p.id}',-1)">−</button> ${qty} <button onclick="chg('${p.id}',1)">+</button> <button onclick="chg('${p.id}',-99)">🗑</button></span></div>`).join("")+`<hr><div class="row"><span>ราคาสินค้า</span><b>${fmt(c.sub)}</b></div><div class="row"><span>ค่าจัดส่ง</span><b>${fmt(c.ship)}
+ const tot=sub+(L.length?+S.shipping_fee:0);if(!S.deposit_enabled)dep=0;else if(S.deposit_mode=="fixed")dep=Math.min(+S.deposit_fixed||0,tot);else dep=Math.min(Math.max(dep,+S.deposit_min||0),tot);dep=Mat
